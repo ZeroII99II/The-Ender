@@ -87,6 +87,13 @@ def main():
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     scripted.save(model_path)
 
+    # Save directly to the path expected by RLBot so the new model is
+    # loaded without any manual renaming or moving.
+    out_dir = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot")
+    os.makedirs(out_dir, exist_ok=True)
+    scripted.save(os.path.join(out_dir, "necto-model.pt"))
+
+
 
 if __name__ == "__main__":
     main()
