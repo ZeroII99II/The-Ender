@@ -8,10 +8,32 @@ from torch.distributions import Categorical
 
 
 class Agent:
-    def __init__(self):
+    """Wrapper around the policy network used by :class:`SkyForgeBot`.
+
+    Parameters
+    ----------
+    model_path : str, optional
+        Path to a TorchScript model to load. If ``None`` the constructor will
+        look for the ``SKYFORGEBOT_MODEL_PATH`` environment variable. When no
+        path is provided, the bundled ``necto-model.pt`` file is used. This
+        makes it easy to swap in freshly trained models without modifying the
+        source code.
+    """
+
+    def __init__(self, model_path: str | None = None):
         cur_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(cur_dir, "necto-model.pt"), 'rb') as f:
+
+        if model_path is None:
+            model_path = os.getenv("SKYFORGEBOT_MODEL_PATH")
+
+        if model_path is None:
+            model_path = os.path.join(cur_dir, "necto-model.pt")
+        elif not os.path.isabs(model_path):
+            model_path = os.path.join(cur_dir, model_path)
+
+        with open(model_path, "rb") as f:
             self.actor = torch.jit.load(f)
+
         torch.set_num_threads(1)
 
     def act(self, state, beta):
