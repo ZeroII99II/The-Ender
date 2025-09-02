@@ -25,6 +25,15 @@ python training/train.py
 The script saves `necto-model.pt` directly inside `SkyForgeBot/`.  Since
 `bot.cfg` already references this path, RLBot will automatically load the newly
 trained model without any renaming or file moves.
+The script writes the resulting model to the location specified by the
+`SKYFORGEBOT_MODEL_PATH` environment variable. When the variable is unset, the
+file defaults to `SkyForgeBot/trained-model.pt`. Update
+`SkyForgeBot/bot.cfg`'s `model_path` or set `SKYFORGEBOT_MODEL_PATH` when
+running RLBot so the fresh weights are picked up. Rename the file if you want
+to replace the shipped `necto-model.pt`.
+
+You can also launch the training process through RLBot by using
+`training/bot.cfg` directly or referencing it from `rlbot.cfg`.
 
 ## Packaging for RLBot Championship
 
