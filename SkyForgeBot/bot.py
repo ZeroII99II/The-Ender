@@ -1,3 +1,6 @@
+import os
+from configparser import ConfigParser
+
 import numpy as np
 import torch
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
@@ -28,7 +31,14 @@ class SkyForgeBot(BaseAgent):
         super().__init__(name, team, index)
 
         self.obs_builder = None
-        self.agent = Agent()
+
+        model_path = os.getenv("SKYFORGEBOT_MODEL_PATH")
+        if model_path is None:
+            cfg = ConfigParser()
+            cfg.read(os.path.join(os.path.dirname(__file__), "bot.cfg"))
+            model_path = cfg.get("Locations", "model_path", fallback=None)
+
+        self.agent = Agent(model_path)
         self.tick_skip = 8
 
         # Beta controls randomness:
