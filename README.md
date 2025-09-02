@@ -11,9 +11,9 @@ packaging the bot for RLBot Championship submissions.
    ```bash
    pip install -r SkyForgeBot/requirements.txt
    ```
-3. (Optional) For training, also install:
+3. (Optional) For training, install the additional dependencies:
    ```bash
-   pip install stable-baselines3
+   pip install -r env/requirements.txt
    ```
 
 ## Training new weights
