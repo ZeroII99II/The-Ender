@@ -1,0 +1,3 @@
+[build]
+entry_point = "SkyForgeBot.bot:SkyForgeBot"
+requirements_path = "SkyForgeBot/requirements.txt"

@@ -1,0 +1,15 @@
+[bot]
+name = "SkyForgeBot"
+team_color = "blue"
+python_module = "SkyForgeBot.bot"
+python_class_name = "SkyForgeBot"
+loadout_config = "SkyForgeBot/appearance.cfg"
+logo_file = "SkyForgeBot/logo.png"
+requirements_file = "SkyForgeBot/requirements.txt"
+
+[details]
+developer = "Rolv, Soren, and contributors"
+description = "SkyForgeBot is the official RLGym community bot, trained using PPO with distributed workers"
+fun_fact = "Uses an attention mechanism to support any number of players"
+github = "https://github.com/Rolv-Arild/SkyForgeBot"
+language = "Python"
