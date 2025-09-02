@@ -195,6 +195,31 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     scripted.save(os.path.join(out_dir, "necto-model.pt"))
 
+    actor = AgentActor(model.policy, env.action_space)
+    dummy = torch.zeros((1,) + env.observation_space.shape)
+    scripted = torch.jit.trace(actor, dummy)
+
+    # Determine where to save the trained model.  RLBot can specify a target
+    # location via the ``SKYFORGEBOT_MODEL_PATH`` environment variable which is
+    # also used by the running agent.  When unset, default to placing the file
+    # alongside ``SkyForgeBot/bot.cfg`` so it is immediately usable.
+    model_path = os.getenv("SKYFORGEBOT_MODEL_PATH")
+    cur_dir = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot")
+    if model_path is None:
+        model_path = os.path.join(cur_dir, "trained-model.pt")
+    elif not os.path.isabs(model_path):
+        model_path = os.path.join(cur_dir, model_path)
+
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    scripted.save(model_path)
+
+    # Save directly to the path expected by RLBot so the new model is
+    # loaded without any manual renaming or moving.
+    out_dir = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot")
+    os.makedirs(out_dir, exist_ok=True)
+    scripted.save(os.path.join(out_dir, "necto-model.pt"))
+
+
 
 if __name__ == "__main__":
     main()
