@@ -74,7 +74,9 @@ def main():
     scripted = torch.jit.trace(actor, dummy)
     out_dir = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot")
     os.makedirs(out_dir, exist_ok=True)
-    scripted.save(os.path.join(out_dir, "trained-model.pt"))
+    # Save directly to the path expected by ``bot.cfg`` so RLBot can load the
+    # freshly trained model without any manual file moves.
+    scripted.save(os.path.join(out_dir, "necto-model.pt"))
 
 
 if __name__ == "__main__":

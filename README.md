@@ -22,10 +22,9 @@ Run the provided training script to produce a TorchScript actor:
 ```bash
 python training/train.py
 ```
-The script saves `trained-model.pt` inside `SkyForgeBot/`.  Update
-`SkyForgeBot/bot.cfg`'s `model_path` or set the `SKYFORGEBOT_MODEL_PATH`
-environment variable to use it.  Rename the file if you want to replace the
-shipped `necto-model.pt`.
+The script saves `necto-model.pt` directly inside `SkyForgeBot/`.  Since
+`bot.cfg` already references this path, RLBot will automatically load the newly
+trained model without any renaming or file moves.
 
 ## Packaging for RLBot Championship
 
