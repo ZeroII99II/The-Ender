@@ -4,8 +4,8 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlgym_compat import GameState
 
-from agent import Agent
-from necto_obs import NectoObsBuilder
+from .agent import Agent
+from .necto_obs import NectoObsBuilder
 
 KICKOFF_CONTROLS = (
         11 * 4 * [SimpleControllerState(throttle=1, boost=True)]
@@ -23,7 +23,7 @@ KICKOFF_NUMPY = np.array([
 ])
 
 
-class Necto(BaseAgent):
+class SkyForgeBot(BaseAgent):
     def __init__(self, name, team, index, beta=1, render=False, hardcoded_kickoffs=True):
         super().__init__(name, team, index)
 
@@ -44,8 +44,8 @@ class Necto(BaseAgent):
         self.ticks = 0
         self.prev_time = 0
         self.kickoff_index = -1
-        print('Necto Ready - Index:', index)
-        print("Remember to run Necto at 120fps with vsync off! "
+        print('SkyForgeBot Ready - Index:', index)
+        print("Remember to run SkyForgeBot at 120fps with vsync off! "
               "Stable 240/360 is second best if that's better for your eyes")
         print("Also check out the RLGym Twitch stream to watch live bot training and occasional showmatches!")
 
