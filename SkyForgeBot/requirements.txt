@@ -1,6 +1,6 @@
 # Include everything the framework requires
 # You will automatically get updates for all versions starting with "1.".
-rlbot==1.*
+rlbot==5.*
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==2.0.1+cpu
 rlgym-compat>=2.0
