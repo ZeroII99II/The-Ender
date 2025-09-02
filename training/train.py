@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from stable_baselines3 import PPO
 import rlgym
 from rlgym.utils.state_setters import RandomState
+from rlgym.utils.action_parsers import NectoAction
 from rlgym.utils.reward_functions import CombinedReward
 from rlgym.utils.reward_functions.common_rewards import (
     EventReward,
@@ -16,6 +17,9 @@ from rlgym.utils.terminal_conditions.common_conditions import (
     TimeoutCondition,
 )
 from SkyForgeBot.necto_obs import NectoObsBuilder
+from stable_baselines3.common.policies import ActorCriticPolicy
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+import torch.nn as nn
 
 
 class NectoAction:
@@ -73,6 +77,26 @@ def make_env() -> rlgym.RLGym:
 
 
 class EARLPerceiverBlock(nn.Module):
+    """Simplified perceiver attention block matching the pretrained model."""
+
+    def __init__(self, d_model: int = 128, nhead: int = 4):
+        super().__init__()
+        self.attention = nn.MultiheadAttention(d_model, nhead, batch_first=True)
+        self.linear1 = nn.Linear(d_model, 2 * d_model)
+        self.linear2 = nn.Linear(2 * d_model, d_model)
+        self.relu = nn.ReLU()
+
+    def forward(self, q, kv, mask):
+        attn_out, _ = self.attention(q, kv, kv, key_padding_mask=mask.bool())
+        x = q + attn_out
+        ff = self.linear2(self.relu(self.linear1(x)))
+        return x + ff
+
+
+class EARLPerceiver(nn.Module):
+    """Feature extractor used by the Necto policy."""
+
+
     def __init__(self):
         super().__init__()
         self.attention = nn.MultiheadAttention(128, 1, batch_first=True)
@@ -101,6 +125,65 @@ class EARLPerceiver(nn.Module):
     def forward(self, q, kv, mask):
         q = self.query_preprocess(q)
         kv = self.key_value_preprocess(kv)
+        for block in self.blocks:
+            q = block(q, kv, mask)
+        return self.postprocess(q)
+
+
+class NectoFeatureExtractor(BaseFeaturesExtractor):
+    """Stable-Baselines features extractor wrapping the perceiver."""
+
+    def __init__(self, observation_space):
+        super().__init__(observation_space, features_dim=128)
+        self.earl = EARLPerceiver()
+        self.relu = nn.ReLU()
+
+    def forward(self, obs):
+        q, kv, mask = obs
+        x = self.earl(q, kv, mask)
+        x = self.relu(x)
+        return x.squeeze(1)
+
+
+class NectoPolicy(ActorCriticPolicy):
+    """Actor-critic policy matching the architecture of ``necto-model.pt``."""
+
+    def __init__(self, observation_space, action_space, lr_schedule, **kwargs):
+        super().__init__(
+            observation_space,
+            action_space,
+            lr_schedule,
+            net_arch=[dict(pi=[], vf=[])],
+            features_extractor_class=NectoFeatureExtractor,
+            **kwargs,
+        )
+
+        action_dim = int(action_space.nvec.sum())
+        # Reuse action_net so state dict matches ``net.output.linear``
+        self.net = nn.Module()
+        self.net.earl = self.features_extractor.earl
+        self.net.relu = self.features_extractor.relu
+        self.action_net = nn.Linear(self.features_extractor.features_dim, action_dim)
+        self.net.output = nn.Module()
+        self.net.output.linear = self.action_net
+
+    def _load_pretrained(self, path: str):
+        ts_model = torch.jit.load(path)
+        state = ts_model.state_dict()
+        policy_state = self.state_dict()
+        for k in policy_state.keys():
+            ts_key = None
+            if k.startswith("net.earl"):
+                ts_key = k
+            elif k.startswith("action_net"):
+                ts_key = "net.output.linear" + k[len("action_net"):]
+            if ts_key is not None and ts_key in state:
+                policy_state[k] = state[ts_key]
+        self.load_state_dict(policy_state, strict=False)
+
+class AgentActor(torch.nn.Module):
+    """Wrap a Stable-Baselines policy with the interface expected by Agent."""
+
         weights = []
         for block in self.blocks:
             q, w = block(q, kv, mask)
@@ -173,6 +256,10 @@ def main():
     env = make_env()
     model = PPO(NectoPolicy, env, verbose=1)
 
+    # Initialize from pretrained TorchScript weights
+    ts_path = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot", "necto-model.pt")
+    model.policy._load_pretrained(ts_path)
+
     # Load pretrained TorchScript weights
     script_path = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot", "necto-model.pt")
     if os.path.exists(script_path):
@@ -196,7 +283,11 @@ def main():
     scripted.save(os.path.join(out_dir, "necto-model.pt"))
 
     actor = AgentActor(model.policy, env.action_space)
-    dummy = torch.zeros((1,) + env.observation_space.shape)
+    dummy = (
+        torch.zeros((1, 1, 32)),
+        torch.zeros((1, 1, 24)),
+        torch.zeros((1, 1), dtype=torch.bool),
+    )
     scripted = torch.jit.trace(actor, dummy)
 
     # Determine where to save the trained model.  RLBot can specify a target
