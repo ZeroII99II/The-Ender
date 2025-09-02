@@ -72,9 +72,20 @@ def main():
     actor = AgentActor(model.policy, env.action_space)
     dummy = torch.zeros((1,) + env.observation_space.shape)
     scripted = torch.jit.trace(actor, dummy)
-    out_dir = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot")
-    os.makedirs(out_dir, exist_ok=True)
-    scripted.save(os.path.join(out_dir, "trained-model.pt"))
+
+    # Determine where to save the trained model.  RLBot can specify a target
+    # location via the ``SKYFORGEBOT_MODEL_PATH`` environment variable which is
+    # also used by the running agent.  When unset, default to placing the file
+    # alongside ``SkyForgeBot/bot.cfg`` so it is immediately usable.
+    model_path = os.getenv("SKYFORGEBOT_MODEL_PATH")
+    cur_dir = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot")
+    if model_path is None:
+        model_path = os.path.join(cur_dir, "trained-model.pt")
+    elif not os.path.isabs(model_path):
+        model_path = os.path.join(cur_dir, model_path)
+
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    scripted.save(model_path)
 
 
 if __name__ == "__main__":
