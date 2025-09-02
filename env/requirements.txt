@@ -21,4 +21,4 @@ rocketsim==4.5.0
 stable-baselines3==2.3.2
 
 # RLBot v5 (already present; keep pin you use)
-git+https://github.com/RLBot/RLBot.git@develop
+rlbot==1.68.0
