@@ -3,23 +3,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from stable_baselines3 import PPO
-import rlgym
-from rlgym.utils.state_setters import RandomState
-from rlgym.utils.action_parsers import NectoAction
-from rlgym.utils.reward_functions import CombinedReward
-from rlgym.utils.reward_functions.common_rewards import (
+from rlgym_compat.envs import make
+from rlgym_compat.state_setters import RandomState
+from rlgym_compat.reward_functions import CombinedReward
+from rlgym_compat.reward_functions.common_rewards import (
     EventReward,
     TouchBallReward,
     VelocityReward,
 )
-from rlgym.utils.terminal_conditions.common_conditions import (
+from rlgym_compat.terminal_conditions.common_conditions import (
     GoalScoredCondition,
     TimeoutCondition,
 )
 from SkyForgeBot.necto_obs import NectoObsBuilder
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-import torch.nn as nn
 
 
 class NectoAction:
@@ -53,7 +51,7 @@ class NectoAction:
         return parsed
 
 
-def make_env() -> rlgym.RLGym:
+def make_env():
     """Create a 2v2 rlgym environment matching RLBot tick rate."""
     reward_fn = CombinedReward(
         (
@@ -64,7 +62,7 @@ def make_env() -> rlgym.RLGym:
         (1.0, 0.1, 0.1),
     )
     terminal_conditions = [TimeoutCondition(225), GoalScoredCondition()]
-    env = rlgym.make(
+    env = make(
         tick_skip=8,  # 120 / 8 = 15 Hz action rate like RLBot
         team_size=2,
         obs_builder=NectoObsBuilder(),
@@ -184,12 +182,12 @@ class NectoPolicy(ActorCriticPolicy):
 class AgentActor(torch.nn.Module):
     """Wrap a Stable-Baselines policy with the interface expected by Agent."""
 
-        weights = []
-        for block in self.blocks:
-            q, w = block(q, kv, mask)
-            weights.append(w)
-        q = self.postprocess(q)
-        return q, weights
+    def __init__(self, policy):
+        super().__init__()
+        self.policy = policy
+
+    def forward(self, obs):
+        return self.policy(obs)
 
 
 class Necto(nn.Module):
