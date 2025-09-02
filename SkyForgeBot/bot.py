@@ -7,8 +7,8 @@ from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 from rlgym_compat import GameState
 
-from .agent import Agent
-from .necto_obs import NectoObsBuilder
+from agent import Agent
+from necto_obs import NectoObsBuilder
 
 KICKOFF_CONTROLS = (
         11 * 4 * [SimpleControllerState(throttle=1, boost=True)]
