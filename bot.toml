@@ -1,7 +1,8 @@
 [bot]
 name = "SkyForgeBot"
 team_color = "blue"
-python_module = "SkyForgeBot.bot"
+# Path to the RLBot entry point relative to this file
+python_file = "SkyForgeBot/bot.py"
 python_class_name = "SkyForgeBot"
 loadout_config = "SkyForgeBot/appearance.cfg"
 logo_file = "SkyForgeBot/logo.png"
