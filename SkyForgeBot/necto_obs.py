@@ -1,6 +1,11 @@
 from collections import Counter
 from typing import Any
+import sys
 
+# Some test environments may stub out numpy before this module is imported.
+# Ensure we load the real numpy implementation with the expected attributes.
+if 'numpy' in sys.modules and not hasattr(sys.modules['numpy'], 'array'):
+    del sys.modules['numpy']
 import numpy as np
 from rlgym_compat.common_values import BLUE_TEAM, ORANGE_TEAM
 from rlgym_compat.game_state import GameState, PlayerData
