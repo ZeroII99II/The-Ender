@@ -51,6 +51,7 @@ class NectoObsBuilder:
         super().__init__()
         self.demo_timers = None
         self.boost_timers = None
+        self.air_timers = None
         self.current_state = None
         self.current_qkv = None
         self.current_mask = None
@@ -66,6 +67,7 @@ class NectoObsBuilder:
     def reset(self, initial_state: GameState):
         self.demo_timers = Counter()
         self.boost_timers = np.zeros(len(initial_state.boost_pads))
+        self.air_timers = Counter()
         # self.current_state = initial_state
 
     def _maybe_update_obs(self, state: GameState):
@@ -149,8 +151,22 @@ class NectoObsBuilder:
             qkv[0, :, (1, 2)] = qkv[0, :, (2, 1)]  # Swap blue/orange
             qkv *= self._invert  # Negate x and y values
 
-        q = qkv[0, main_n, :]
-        q = np.expand_dims(np.concatenate((q, previous_action), axis=0), axis=(0, 1))
+        q = qkv[0, main_n, :].copy()
+
+        # Track time spent in the air for the observed player
+        if player.car_id not in self.air_timers:
+            self.air_timers[player.car_id] = 0.0
+        if player.on_ground:
+            self.air_timers[player.car_id] = 0.0
+        else:
+            self.air_timers[player.car_id] += self.tick_skip / 120
+        air_time = self.air_timers[player.car_id]
+
+        # Relative ball height from the player's perspective
+        rel_ball_height = state.ball.position[2] - player.car_data.position[2]
+        extra = np.array([rel_ball_height / 2000, air_time])
+
+        q = np.expand_dims(np.concatenate((q, extra, previous_action), axis=0), axis=(0, 1))
         kv = qkv
 
         # Use relative coordinates
