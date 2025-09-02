@@ -2,15 +2,13 @@ from __future__ import annotations
 from typing import Dict, Any, Callable
 import numpy as np
 from src.utils.gym_compat import gym
-from src.rlbot_integration.observation_adapter import OBS_SIZE
+from src.rlbot_integration.observation_adapter import (
+    OBS_SIZE,
+    build_observation as TRAIN_BUILD_OBS,
+)
 from src.rlbot_integration.controller_adapter import CONT_DIM, DISC_DIM
 from src.training.rewards_ssl import SSLReward
-
-# TODO: replace with your real RLGym v2 session APIs.
-# Provide these 3 hooks below:
-#   _session_reset() -> state_dict
-#   _session_step(a_cont: np.ndarray, a_disc: np.ndarray) -> state_dict
-#   _build_obs(state_dict, prev_action) -> np.ndarray length 107
+from src.training.rlgym_session import RLSession2v2, TwoActions
 
 
 class RL2v2Env(gym.Env):
@@ -26,22 +24,34 @@ class RL2v2Env(gym.Env):
         self.np_random, _ = gym.utils.seeding.np_random(seed)
         self._prev_action = np.zeros(CONT_DIM + DISC_DIM, dtype=np.float32)
         self._rew = SSLReward()
+        self._session = RLSession2v2(tick_skip=8, game_speed=1.0, episode_len_seconds=300)
 
     # ----- RLGym v2 session stubs (IMPLEMENT ME) -----
     def _session_reset(self) -> Dict[str, Any]:
-        # reset your RLGym v2 match here (kickoff state, seed)
-        return dict(event=default_events(), self=default_self(), team=default_team(),
-                    touch=default_touch(), combo=default_combo(),
-                    ball_pos=np.zeros(3, np.float32))
+        return self._session.reset()
 
     def _session_step(self, a_cont: np.ndarray, a_disc: np.ndarray) -> Dict[str, Any]:
-        # advance simulation by one tick and return updated telemetry
-        return self._session_reset()  # placeholder
+        # Split our single “self bot” action dict into actions for BOTH blue cars.
+        # For now, mirror your action to the teammate with slight noise; later you’ll plug a teammate head or shared policy.
+        a0c = a_cont.astype(np.float32)
+        a0d = (a_disc > 0.5).astype(np.float32)
+        a1c = (a0c + np.random.normal(0, 0.05, size=a0c.shape)).clip(-1, 1).astype(np.float32)
+        a1d = a0d.copy()
+
+        return self._session.step(TwoActions(a0c, a1c, a0d, a1d))
 
     def _build_obs(self, s: Dict[str, Any], prev_action: np.ndarray) -> np.ndarray:
-        # MUST mirror RLBot obs adapter ordering (length 107, in [-1,1])
-        # Replace with your real observation builder
-        return np.zeros((OBS_SIZE,), dtype=np.float32)
+        """
+        Build the exact 107-dim observation using your training builder.
+        TRAIN_BUILD_OBS must mirror RLBot adapter ordering and scaling.
+        """
+        try:
+            obs = TRAIN_BUILD_OBS(s, prev_action)  # expects (state_dict, prev_action[8]) -> (107,)
+        except TypeError:
+            obs = TRAIN_BUILD_OBS(s)
+        obs = np.asarray(obs, dtype=np.float32)
+        assert obs.shape == (OBS_SIZE,), f"obs shape {obs.shape}, expected {(OBS_SIZE,)}"
+        return obs
     # --------------------------------------------------
 
     def reset(self, *, seed: int | None = None, options: Dict[str, Any] | None = None):
