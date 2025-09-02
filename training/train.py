@@ -72,9 +72,12 @@ def main():
     actor = AgentActor(model.policy, env.action_space)
     dummy = torch.zeros((1,) + env.observation_space.shape)
     scripted = torch.jit.trace(actor, dummy)
+
+    # Save directly to the path expected by RLBot so the new model is
+    # loaded without any manual renaming or moving.
     out_dir = os.path.join(os.path.dirname(__file__), "..", "SkyForgeBot")
     os.makedirs(out_dir, exist_ok=True)
-    scripted.save(os.path.join(out_dir, "trained-model.pt"))
+    scripted.save(os.path.join(out_dir, "necto-model.pt"))
 
 
 if __name__ == "__main__":

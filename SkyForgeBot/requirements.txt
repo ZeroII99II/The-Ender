@@ -3,8 +3,8 @@
 rlbot==1.*
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==2.0.1+cpu
-rlgym-compat==1.0.2
+rlgym-compat>=2.0
+rlgym>=2.0
 numpy
-
 # This will cause pip to auto-upgrade and stop scaring people with warning messages
 pip
