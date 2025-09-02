@@ -133,7 +133,7 @@ class NectoObsBuilder:
         # Store results
         self.current_qkv = qkv / self._norm
         mask = np.zeros((1, qkv.shape[1]))
-        mask[0, 1 + len(state.players):1 + len(state.players)] = 1
+        mask[0, 1 + len(state.players):1 + len(state.players) + len(state.boost_pads)] = 1
         self.current_mask = mask
 
     def build_obs(self, player: PlayerData, state: GameState, previous_action: np.ndarray) -> Any:
